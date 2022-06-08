@@ -9,7 +9,7 @@ struct AdjListNode {
 };
  
 struct AdjList {
-    int color;
+    int connections;
     struct AdjListNode* head;
 };
  
@@ -33,7 +33,7 @@ struct Graph* createGraph(int V) {
     int i;
     for (i = 0; i < V; ++i){
         graph->array[i].head = NULL;
-        graph->array[i].color = 0;
+        graph->array[i].connections = 0;
     }
     return graph;
 }
@@ -59,6 +59,7 @@ void addEdge(struct Graph* graph, int src, int dest)
     else{
     	if (graph->array[src].head == NULL) {
 	        graph->array[src].head = newNode;
+	        graph->array[src].connections++;
 	    }
 	    else {
 	        temp = graph->array[src].head;
@@ -66,11 +67,13 @@ void addEdge(struct Graph* graph, int src, int dest)
 	            temp = temp->next;
 	        }
 	        temp->next = newNode;
+	        graph->array[src].connections++;
 	    } 
 	
 	    newNode = newAdjListNode(src);
 	    if (graph->array[dest].head == NULL) {
 	        graph->array[dest].head = newNode;
+	        graph->array[dest].connections++;
 	    }
 	    else {
 	        temp = graph->array[dest].head;
@@ -78,6 +81,7 @@ void addEdge(struct Graph* graph, int src, int dest)
 	            temp = temp->next;
 	        }
 	        temp->next = newNode;
+	        graph->array[dest].connections++;
 	    }
 	}
     
@@ -96,23 +100,50 @@ void printGraph(struct Graph* graph)
         printf("\n");
     }
 }
-int coloringAlgorithm(struct Graph* graph){
+void coloringAlgorithm(struct Graph* graph){
     int colorValue = 0;
     int chromaticNumber = 0;
     int i;
     int k;
+    int j=0;
     struct AdjListNode* temp;
+    
+    //Dsatur
+    int connect=0;
+    int vertexSort[graph->V];
+    int color[graph->V];
+    for(i=0; i<graph->V; ++i){ color[i]=-1;}
+    for(i=0; i<graph->V; ++i){ 
+    	for(j=0;j<graph->V;++j){
+				if(color[j]==-1){ 
+					connect=j;
+					break;}
+		}
+		for(k=0;k<graph->V;++k){
+			
+			if (graph->array[connect].connections<graph->array[k].connections && color[k]==-1 ){
+				connect=k;
+			}
+		}
+		color[connect]=0;
+		vertexSort[i]=connect;
+		//printf("%d ",vertexSort[i]);
+		connect=0;
+	}
+    
+
     
     int results[graph->V];
     for(i=0; i<graph->V; ++i){ results[i]=-1;}
-    results[0]=0;
+    //results[0]=0;
     
     int isColored[graph->V];
     for(i=0; i<graph->V; ++i){ isColored[i]=0;}
     
     
-    for(k=1; k<graph->V; ++k){
-        temp = graph->array[k].head;
+    for(k=0; k<graph->V; ++k){
+    
+    	temp = graph->array[vertexSort[k]].head;
         while(temp){
             if(results[temp->dest]!=-1){ isColored[results[temp->dest]]=1; }
             temp = temp->next;
@@ -122,19 +153,27 @@ int coloringAlgorithm(struct Graph* graph){
             if(isColored[colorValue]==0){break;}
             colorValue+=1;
         }
-        results[k] = colorValue;
+        results[vertexSort[k]] = colorValue;
         
         for(i=0; i<graph->V; ++i){ isColored[i]=0;}
     }
     
+    for(i=0;i<graph->V;++i){if(results[i]>chromaticNumber){chromaticNumber = results[i];} }
+    printf("%d\n",++chromaticNumber);
+    FILE* result;
+    result = fopen("output.txt","w");
+    fprintf(result,"%d\n",chromaticNumber);
     for(i=0;i<graph->V;++i){
-        printf("%d ",results[i]);
-        if(results[i]>chromaticNumber){chromaticNumber = results[i];}
-    }
+		printf("%d ",results[i]);
+		fprintf(result,"%d ", results[i]);
+		}
+		
     
-    return chromaticNumber;
+    
+    fclose(result);
+    
 }
- 
+
 int main()
 {
     FILE* file;
@@ -162,9 +201,8 @@ int main()
     }
     //printGraph(graph);
     
-    chromaticNumber = coloringAlgorithm(graph);
-    printf("\n%d", chromaticNumber);
+    coloringAlgorithm(graph);
     fclose(file);
-    scanf("\n%d", &chromaticNumber);
+    //scanf("\n%d", &chromaticNumber);
     return 0;
 }
